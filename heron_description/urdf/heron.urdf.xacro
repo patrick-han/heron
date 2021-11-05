@@ -30,6 +30,9 @@ This program contains the description of the robot base model for the Clearpath 
   <xacro:arg name="namespace" default=""/>
   <xacro:arg name="suffix_ns" default="$(arg namespace)"/>
 
+  <!-- ADDED-->
+  <xacro:property name="PI" value="3.1415926535897931"/>
+
   <!-- Include the ROV macro file -->
   <xacro:include filename="$(find heron_description)/urdf/base.xacro"/>
   <xacro:include filename="$(find heron_description)/urdf/gazebo.xacro"/>
@@ -58,12 +61,51 @@ This program contains the description of the robot base model for the Clearpath 
 
   </xacro:heron_base>
 
+  <!-- ADDED-->
+  <!-- lidars -->
+  <xacro:include filename="$(find beam_simulation)/urdf/VLP-16.urdf.xacro"/>
+  <VLP-16 parent="base_link" name="hvlp_link" topic="/hvlp/velodyne_points" hz="5"
+          samples="2000" gpu="false" noise="0.0001">
+  <origin xyz="0.0 0.00 0.0445" rpy="0.0 0.0 0.00"/>
+  </VLP-16>
+
+  <!-- ADDED-->
+  <!-- cameras -->
+  <link name="F2_camera_box">
+    <visual>
+      <geometry>
+        <box size="0.03 0.03 0.03" />
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- ADDED-->
+  <joint name="F2_camera_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="F2_camera_box" />
+    <origin xyz="-0.01 -0.075 0.02" rpy="${pi} ${pi} 0" />
+  </joint>
+  <xacro:include filename="$(find beam_simulation)/urdf/camera.urdf.xacro"/>
+  <camera_model parent="F2_camera_box" name="F2" hfov="1.0471975512" fps="30" width="2048" height="1536"/>
+
+
   <!-- Joint state publisher plugin -->
   <gazebo>
     <plugin name="joint_state_publisher" filename="libuuv_joint_state_publisher.so">
       <robotNamespace>/$(arg namespace)</robotNamespace>
       <updateRate>10</updateRate>
     </plugin>
+
+    <!-- ADDED-->
+    <plugin name="odom_ground_truth" filename="libgazebo_ros_p3d.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <bodyName>base_link</bodyName>
+      <topicName>/odometry/ground_truth</topicName>
+      <gaussianNoise>0.0</gaussianNoise>
+      <frameName>world</frameName>
+    </plugin>
+
   </gazebo>
 
 </robot>
